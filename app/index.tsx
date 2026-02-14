@@ -1,28 +1,54 @@
+import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { getStreak} from '../utils/streak';
 
 export default function Home() {
   const router = useRouter();
+  const [streakCount, setStreakCount] = useState(0);
+  const [lastCheckin, setLastCheckin] = useState<string | null>(null);
+
+  // Refresh streak data every time this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      getStreak().then((data) => {
+        setStreakCount(data.count);
+        setLastCheckin(data.lastCheckin);
+      });
+    }, [])
+  );
 
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
       <Text style={styles.title}>Gym Streak</Text>
-      
+
+      {/* Streak display */}
+      <View style={styles.streakContainer}>
+        <Text style={styles.fireEmoji}>🔥</Text>
+        <Text style={styles.streakNumber}>{streakCount}</Text>
+        <Text style={styles.streakLabel}>
+          {streakCount === 1 ? 'day' : 'days'}
+        </Text>
+        {lastCheckin && (
+          <Text style={styles.lastCheckin}>Last check-in: {lastCheckin}</Text>
+        )}
+      </View>
+
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.button}
           onPress={() => router.push('/camera?type=reference')}
         >
           <Text style={styles.buttonText}>Set Reference Photo</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.button}
+
+        <TouchableOpacity
+          style={[styles.button, styles.checkinButton]}
           onPress={() => router.push('/camera?type=checkin')}
         >
-          <Text style={styles.buttonText}>Daily Check-in</Text>
+          <Text style={styles.buttonText}>Daily Check-in 📸</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -40,19 +66,48 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 60,
+    marginBottom: 20,
     color: '#333',
+  },
+  streakContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  fireEmoji: {
+    fontSize: 48,
+  },
+  streakNumber: {
+    fontSize: 72,
+    fontWeight: 'bold',
+    color: '#FF6B35',
+    lineHeight: 80,
+  },
+  streakLabel: {
+    fontSize: 20,
+    color: '#666',
+    marginTop: 4,
+  },
+  lastCheckin: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 8,
   },
   buttonContainer: {
     width: '100%',
     maxWidth: 300,
-    gap: 20,
+    gap: 16,
   },
   button: {
     backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  checkinButton: {
+    backgroundColor: '#34C759',
+  },
+  resetButton: {
+    backgroundColor: '#FF3B30',
   },
   buttonText: {
     color: '#fff',
