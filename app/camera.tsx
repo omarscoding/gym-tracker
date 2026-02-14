@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-na
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { incrementStreak, saveReferencePhoto } from '../utils/streak';
+import { analyzePhoto } from '../utils/imageAnalysis';
 
 export default function Camera() {
   const [facing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
@@ -33,15 +35,17 @@ export default function Camera() {
 
   const takePicture = async () => {
     if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      if (photo) {
-        setPhoto(photo.uri);
+      const result = await cameraRef.current.takePictureAsync({ base64: true });
+      if (result) {
+        setPhoto(result.uri);
+        setPhotoBase64(result.base64 ?? null);
       }
     }
   };
 
   const retake = () => {
     setPhoto(null);
+    setPhotoBase64(null);
   };
 
   const goHome = () => {
@@ -53,13 +57,29 @@ export default function Camera() {
     setConfirming(true);
     try {
       if (isCheckin) {
-        // Dev mode: every photo counts as a valid gym check-in
-        const streakData = await incrementStreak();
-        Alert.alert(
-          '🔥 Streak Updated!',
-          `You're on a ${streakData.count}-day streak!`,
-          [{ text: 'Nice!', onPress: goHome }]
-        );
+        if (!photoBase64) {
+          Alert.alert('Error', 'Could not read photo data. Please retake.');
+          setConfirming(false);
+          return;
+        }
+        // Analyze the photo to check for gym equipment
+        const analysis = await analyzePhoto(photoBase64);
+        console.log('Analysis result:', JSON.stringify(analysis));
+
+        if (analysis.isGymEquipment) {
+          const streakData = await incrementStreak();
+          Alert.alert(
+            '🔥 Streak Updated!',
+            `${analysis.label} detected! You're on a ${streakData.count}-day streak!`,
+            [{ text: 'Nice!', onPress: goHome }]
+          );
+        } else {
+          Alert.alert(
+            '❌ No Gym Equipment Detected',
+            `Detected: "${analysis.label}". Take a photo of a dumbbell or other gym equipment to check in.`,
+            [{ text: 'Try Again', onPress: retake }]
+          );
+        }
       } else if (isReference) {
         await saveReferencePhoto(photo);
         Alert.alert(
@@ -94,9 +114,9 @@ export default function Camera() {
             disabled={confirming}
           >
             <Text style={styles.buttonText}>
-              {confirming
-                ? 'Processing...'
-                : isCheckin ? 'Confirm ✅' : 'Save 💾'}
+              {confirming && 'Analyzing...'}
+              {!confirming && isCheckin && 'Confirm ✅'}
+              {!confirming && !isCheckin && 'Save 💾'}
             </Text>
           </TouchableOpacity>
         </View>

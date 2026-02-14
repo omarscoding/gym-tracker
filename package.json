@@ -22,11 +22,13 @@
   },
   "homepage": "https://github.com/omarscoding/gym-tracker#readme",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "expo": "^54.0.33",
     "expo-asset": "~12.0.12",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
+    "expo-file-system": "^19.0.21",
     "expo-font": "~14.0.11",
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
