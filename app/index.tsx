@@ -1,8 +1,19 @@
 import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { getStreak} from '../utils/streak';
+
+const streakImages: Record<number, any> = {
+  1: require('../assets/streak-pet-tier1.png'),
+  2: require('../assets/streak-pet-tier2.png'),
+  3: require('../assets/streak-pet-tier3.png'),
+};
+
+function getStreakImage(count: number) {
+  if (count <= 0) return null;
+  return streakImages[Math.min(count, 3)];
+}
 
 export default function Home() {
   const router = useRouter();
@@ -26,7 +37,9 @@ export default function Home() {
 
       {/* Streak display */}
       <View style={styles.streakContainer}>
-        <Text style={styles.fireEmoji}>🔥</Text>
+        {getStreakImage(streakCount) && (
+          <Image source={getStreakImage(streakCount)!} style={styles.streakImage} />
+        )}
         <Text style={styles.streakNumber}>{streakCount}</Text>
         <Text style={styles.streakLabel}>
           {streakCount === 1 ? 'day' : 'days'}
@@ -73,8 +86,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  fireEmoji: {
-    fontSize: 48,
+  streakImage: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
   },
   streakNumber: {
     fontSize: 72,
