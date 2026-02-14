@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { getStreak} from '../utils/streak';
+import { getStreak } from '../utils/streak';
 
 const streakImages: Record<number, any> = {
   1: require('../assets/streak-pet-tier1.png'),
