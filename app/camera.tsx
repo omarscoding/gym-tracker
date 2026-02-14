@@ -1,14 +1,22 @@
 import { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { incrementStreak, saveReferencePhoto } from '../utils/streak';
+import { analyzePhoto } from '../utils/imageAnalysis';
 
 export default function Camera() {
-  const [facing, setFacing] = useState<CameraType>('back');
+  const [facing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
+  const { type } = useLocalSearchParams<{ type: string }>();
+
+  const isCheckin = type === 'checkin';
+  const isReference = type === 'reference';
 
   if (!permission) {
     return <View style={styles.container}><Text>Loading...</Text></View>;
@@ -27,31 +35,89 @@ export default function Camera() {
 
   const takePicture = async () => {
     if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      if (photo) {
-        setPhoto(photo.uri);
+      const result = await cameraRef.current.takePictureAsync({ base64: true });
+      if (result) {
+        setPhoto(result.uri);
+        setPhotoBase64(result.base64 ?? null);
       }
     }
   };
 
   const retake = () => {
     setPhoto(null);
+    setPhotoBase64(null);
   };
 
   const goHome = () => {
     router.back();
   };
 
+  const confirmPhoto = async () => {
+    if (!photo) return;
+    setConfirming(true);
+    try {
+      if (isCheckin) {
+        if (!photoBase64) {
+          Alert.alert('Error', 'Could not read photo data. Please retake.');
+          setConfirming(false);
+          return;
+        }
+        // Analyze the photo to check for gym equipment
+        const analysis = await analyzePhoto(photoBase64);
+        console.log('Analysis result:', JSON.stringify(analysis));
+
+        if (analysis.isGymEquipment) {
+          const streakData = await incrementStreak();
+          Alert.alert(
+            '🔥 Streak Updated!',
+            `${analysis.label} detected! You're on a ${streakData.count}-day streak!`,
+            [{ text: 'Nice!', onPress: goHome }]
+          );
+        } else {
+          Alert.alert(
+            '❌ No Gym Equipment Detected',
+            `Detected: "${analysis.label}". Take a photo of a dumbbell or other gym equipment to check in.`,
+            [{ text: 'Try Again', onPress: retake }]
+          );
+        }
+      } else if (isReference) {
+        await saveReferencePhoto(photo);
+        Alert.alert(
+          'Reference Saved',
+          'Your reference photo has been saved.',
+          [{ text: 'OK', onPress: goHome }]
+        );
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   if (photo) {
     return (
       <View style={styles.container}>
         <Image source={{ uri: photo }} style={styles.preview} />
+        <View style={styles.previewOverlay}>
+          <Text style={styles.previewTitle}>
+            {isCheckin ? 'Confirm Gym Check-in' : 'Save as Reference'}
+          </Text>
+        </View>
         <View style={styles.previewButtons}>
           <TouchableOpacity style={styles.button} onPress={retake}>
             <Text style={styles.buttonText}>Retake</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={goHome}>
-            <Text style={styles.buttonText}>Return Home</Text>
+          <TouchableOpacity
+            style={[styles.button, styles.confirmButton]}
+            onPress={confirmPhoto}
+            disabled={confirming}
+          >
+            <Text style={styles.buttonText}>
+              {confirming && 'Analyzing...'}
+              {!confirming && isCheckin && 'Confirm ✅'}
+              {!confirming && !isCheckin && 'Save 💾'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -133,6 +199,23 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
+  previewOverlay: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  previewTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   previewButtons: {
     position: 'absolute',
     bottom: 20,
@@ -140,5 +223,8 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  confirmButton: {
+    backgroundColor: '#34C759',
   },
 });
