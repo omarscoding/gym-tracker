@@ -1,16 +1,16 @@
 import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ImageSourcePropType } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { getStreak } from '../utils/streak';
+import { getStreak} from '../utils/streak';
 
-const streakImages: Record<number, any> = {
+const streakImages: Record<number, ImageSourcePropType> = {
   1: require('../assets/streak-pet-tier1.png'),
   2: require('../assets/streak-pet-tier2.png'),
   3: require('../assets/streak-pet-tier3.png'),
 };
 
-function getStreakImage(count: number) {
+function getStreakImage(count: number): ImageSourcePropType | null {
   if (count <= 0) return null;
   return streakImages[Math.min(count, 3)];
 }
