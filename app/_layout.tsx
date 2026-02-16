@@ -1,6 +1,14 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { testSupabaseConnection } from '../utils/supabase';
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (__DEV__) {
+      testSupabaseConnection();
+    }
+  }, []);
+
   return (
     <Stack>
       <Stack.Screen 
