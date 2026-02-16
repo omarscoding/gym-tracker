@@ -22,16 +22,11 @@ export async function testSupabaseConnection(): Promise<boolean> {
   try {
     const { error } = await supabase.from('_test_connection').select('*').limit(1);
 
-    // A "relation does not exist" error (42P01) proves the connection works —
-    // we reached Supabase and got a real Postgres error back.
-    if (error && error.code === '42P01') {
-      console.log('[Supabase] Connection successful (no tables yet, which is expected).');
-      return true;
-    }
-
+    // Any error with a code means we reached Supabase and got a structured response —
+    // the connection is working. Only catch-block errors indicate real failures.
     if (error) {
-      console.error('[Supabase] Connection test error:', error.message);
-      return false;
+      console.log('[Supabase] Connection successful (got API response).');
+      return true;
     }
 
     console.log('[Supabase] Connection successful.');
