@@ -1,6 +1,36 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import { testSupabaseConnection } from '../utils/supabase';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { Slot, useRouter, useSegments } from 'expo-router';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { testSupabaseConnection } from '@/utils/supabase';
+
+function AuthRedirectGuard() {
+  const { session, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!session && !inAuthGroup) {
+      router.replace('/(auth)/sign-in');
+    } else if (session && inAuthGroup) {
+      router.replace('/(app)');
+    }
+  }, [session, isLoading, segments]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  return <Slot />;
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -10,22 +40,17 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack>
-      <Stack.Screen 
-        name="index" 
-        options={{ 
-          title: 'Home',
-          headerShown: false 
-        }} 
-      />
-      <Stack.Screen 
-        name="camera" 
-        options={{ 
-          title: 'Camera',
-          headerShown: false,
-          presentation: 'modal'
-        }} 
-      />
-    </Stack>
+    <AuthProvider>
+      <AuthRedirectGuard />
+    </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+});
