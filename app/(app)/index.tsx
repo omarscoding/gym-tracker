@@ -2,12 +2,13 @@ import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ImageSourcePropType } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { getStreak} from '../utils/streak';
+import { getStreak } from '@/utils/streak';
+import { useAuth } from '@/contexts/AuthContext';
 
 const streakImages: Record<number, ImageSourcePropType> = {
-  1: require('../assets/streak-pet-tier1.png'),
-  2: require('../assets/streak-pet-tier2.png'),
-  3: require('../assets/streak-pet-tier3.png'),
+  1: require('@/assets/streak-pet-tier1.png'),
+  2: require('@/assets/streak-pet-tier2.png'),
+  3: require('@/assets/streak-pet-tier3.png'),
 };
 
 function getStreakImage(count: number): ImageSourcePropType | null {
@@ -17,6 +18,7 @@ function getStreakImage(count: number): ImageSourcePropType | null {
 
 export default function Home() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [streakCount, setStreakCount] = useState(0);
   const [lastCheckin, setLastCheckin] = useState<string | null>(null);
 
@@ -62,6 +64,13 @@ export default function Home() {
           onPress={() => router.push('/camera?type=checkin')}
         >
           <Text style={styles.buttonText}>Daily Check-in 📸</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.signOutButton]}
+          onPress={signOut}
+        >
+          <Text style={styles.buttonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -121,7 +130,7 @@ const styles = StyleSheet.create({
   checkinButton: {
     backgroundColor: '#34C759',
   },
-  resetButton: {
+  signOutButton: {
     backgroundColor: '#FF3B30',
   },
   buttonText: {

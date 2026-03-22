@@ -2,8 +2,8 @@ import { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { incrementStreak, saveReferencePhoto } from '../utils/streak';
-import { analyzePhoto } from '../utils/imageAnalysis';
+import { incrementStreak, saveReferencePhoto } from '@/utils/streak';
+import { analyzePhoto } from '@/utils/imageAnalysis';
 
 export default function Camera() {
   const [facing] = useState<CameraType>('back');
